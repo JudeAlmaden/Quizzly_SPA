@@ -39,7 +39,7 @@ QuizzlySpa is a modern, real-time quiz application built with **Laravel**, **Vue
 
 ### Game Admin View
 *Control the game flow, start timers, and reveal answers. Live view of hosting questions.*
-![Game Admin View 1](documentation/game1.jpg)
+![Game Admin View 1](documentation/game1.png)
 ![Game Admin View 2](documentation/game2.jpg)
 
 ### Dynamic Rankings
