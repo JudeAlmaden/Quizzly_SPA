@@ -32,6 +32,27 @@ watch(() => props.selectedQuestion, (newVal) => {
 onMounted(() => {
      if (props.quiz?.id && window.Echo) {
         window.Echo.channel(`quiz.${props.quiz.id}`)
+            .listen('.question.selected', (e) => {
+                console.log('Game: Question selected', e);
+                // Reload to get the new question data from the server
+                router.reload({
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        isAnswerSubmitted.value = false;
+                    }
+                });
+            })
+            .listen('.timer.started', (e) => {
+                console.log('Game: Timer started', e);
+                if (currentQuestion.value) {
+                    currentQuestion.value = {
+                        ...currentQuestion.value,
+                        accepting_answers: true,
+                        timer_started_at: new Date().toISOString(), // Fallback if server time is slightly off
+                        timer_duration: e.duration
+                    };
+                }
+            })
             .listen('.answer.revealed', (e) => {
                 if (currentQuestion.value && currentQuestion.value.id === e.question.id) {
                      // Update local state without reload

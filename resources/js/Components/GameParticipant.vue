@@ -74,12 +74,8 @@ onMounted(() => {
     }
     if (window.Echo) {
         window.Echo.channel(`quiz.${props.quiz.id}`)
-            .listen('.question.selected', (e) => {
-                console.log('Participant: Question selected', e);
-                router.reload();
-            })
             .listen('.timer.started', (e) => {
-                console.log('Participant: Timer started', e);
+                console.log('Participant: Timer started');
                 // Start timer using server timestamp
                 startTimerFromTimestamp(e.timer_ends_at);
             })
