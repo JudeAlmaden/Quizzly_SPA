@@ -27,9 +27,7 @@ const questionType = computed(() => props.question?.question_data?.type || 'MCQ'
 
 //Ensure that the selected answer is updated when the userAnswer prop changes
 watch(() => props.userAnswer, (newVal) => {
-    if (newVal !== undefined && newVal !== null) {
-        selectedAnswer.value = newVal;
-    }
+    selectedAnswer.value = newVal;
 }, { immediate: true });
 
 //Ensure that the sorting of choices is random
@@ -42,14 +40,18 @@ const shuffleArray = (array) => {
     return arr;
 };
 
-watch(() => props.question, (newVal) => {
-    if (newVal && newVal.question_data?.choices) {
-        // Only shuffle if it's MCQ
-        if (newVal.question_data.type === 'MCQ' || !newVal.question_data.type) {
-             shuffledChoices.value = shuffleArray(newVal.question_data.choices);
-        } else {
-             shuffledChoices.value = [];
+watch(() => props.question?.id, (newId, oldId) => {
+    if (newId && newId !== oldId) {
+        if (props.question.question_data?.choices) {
+            // Only shuffle if it's MCQ
+            if (props.question.question_data.type === 'MCQ' || !props.question.question_data.type) {
+                shuffledChoices.value = shuffleArray(props.question.question_data.choices);
+            } else {
+                shuffledChoices.value = [];
+            }
         }
+    } else if (!newId) {
+        shuffledChoices.value = [];
     }
 }, { immediate: true });
 
@@ -78,26 +80,31 @@ const isChoiceCorrect = (text) => {
             <button
             v-for="choice in shuffledChoices"
             :key="choice.id"
+            @click="!isAdmin && !disabled ? selectedAnswer = choice.id : null"
             :disabled="disabled || isAdmin"
             :class="[
                 'w-full p-6 rounded-xl border-2 text-left transition-all duration-200',
                 isRevealed
                 ? choice.is_correct
                     ? 'border-green-500 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 ring-2 ring-green-500'
-                    : 'border-red-500 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 ring-2 ring-red-500'
-                : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-purple-400 text-white',
+                    : (selectedAnswer == choice.id ? 'border-red-500 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 ring-2 ring-red-500 font-bold' : 'border-white/10 bg-white/5 text-white/50')
+                : selectedAnswer == choice.id
+                    ? 'border-purple-500 bg-purple-500/30 ring-4 ring-purple-500/50 text-white shadow-purple-500/20 shadow-2xl'
+                    : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-purple-400 text-white',
                 (disabled || isAdmin) ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
             ]"
             >
             <div class="flex items-center gap-4">
                 <div
                 :class="[
-                    'w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg',
+                    'w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors',
                     isRevealed
                     ? choice.is_correct
                         ? 'bg-green-500 text-white'
-                        : 'bg-red-500 text-white'
-                    : 'bg-white/20 text-white'
+                        : (selectedAnswer == choice.id ? 'bg-red-500 text-white' : 'bg-white/10 text-white/50')
+                    : selectedAnswer == choice.id
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-white/20 text-white'
                 ]"
                 >
                 {{ String.fromCharCode(64 + choice.id) }}
@@ -107,7 +114,7 @@ const isChoiceCorrect = (text) => {
                 :class="isRevealed
                     ? choice.is_correct
                     ? 'text-green-900 dark:text-green-100'
-                    : 'text-red-900 dark:text-red-100'
+                    : (selectedAnswer == choice.id ? 'text-red-900 dark:text-red-100' : 'text-white/50')
                     : 'text-white'"
                 >
                 {{ choice.text }}
@@ -121,47 +128,32 @@ const isChoiceCorrect = (text) => {
         <div v-else-if="questionType === 'TrueOrFalse'" class="grid grid-cols-2 gap-4">
              <h3 v-if="!isAdmin" class="text-xl font-bold text-white mb-6 col-span-2">Select your answer:</h3>
             <button
-                @click="!isAdmin && !disabled ? selectedAnswer = 'True' : null"
+                v-for="tfChoice in question.question_data.choices"
+                :key="tfChoice.id"
+                @click="!isAdmin && !disabled ? selectedAnswer = tfChoice.id : null"
                 :disabled="disabled || isAdmin"
                 :class="[
                     'w-full p-8 rounded-xl border-2 transition-all duration-200',
-                     isRevealed && isChoiceCorrect('True')
-                        ? 'border-green-500 bg-green-100 dark:bg-green-900/40 rin-2 ring-green-500'
-                        : isRevealed && selectedAnswer === 'True' && !isChoiceCorrect('True')
+                     isRevealed && tfChoice.is_correct
+                        ? 'border-green-500 bg-green-100 dark:bg-green-900/40 ring-2 ring-green-500'
+                        : isRevealed && selectedAnswer == tfChoice.id && !tfChoice.is_correct
                             ? 'border-red-500 bg-red-100 dark:bg-red-900/40 ring-2 ring-red-500'
-                            : selectedAnswer === 'True'
-                                ? 'border-green-600 bg-green-500/20 ring-2 ring-green-500 text-white'
-                                : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-green-400 text-white',
+                            : selectedAnswer == tfChoice.id
+                                ? (tfChoice.text === 'True' 
+                                    ? 'border-green-500 bg-green-500/30 ring-4 ring-green-500/50 text-white shadow-green-500/20 shadow-2xl'
+                                    : 'border-red-500 bg-red-500/30 ring-4 ring-red-500/50 text-white shadow-red-500/20 shadow-2xl')
+                                : 'border-white/20 bg-white/5 hover:bg-white/10 text-white',
                     (disabled || isAdmin) ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
                 ]"
             >
                 <div class="flex items-center justify-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" :class="(isRevealed && isChoiceCorrect('True')) || selectedAnswer === 'True' ? (isRevealed && !isChoiceCorrect('True') ? 'text-red-600' : 'text-green-600') : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg v-if="tfChoice.text === 'True'" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" :class="(isRevealed && tfChoice.is_correct) || selectedAnswer == tfChoice.id ? (isRevealed && !tfChoice.is_correct ? 'text-red-600' : 'text-green-500') : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span class="text-2xl font-bold">TRUE</span>
-                </div>
-            </button>
-            <button
-                @click="!isAdmin && !disabled ? selectedAnswer = 'False' : null"
-                 :disabled="disabled || isAdmin"
-                :class="[
-                    'w-full p-8 rounded-xl border-2 transition-all duration-200',
-                    isRevealed && isChoiceCorrect('False')
-                        ? 'border-green-500 bg-green-100 dark:bg-green-900/40 ring-2 ring-green-500'
-                        : isRevealed && selectedAnswer === 'False' && !isChoiceCorrect('False')
-                            ? 'border-red-500 bg-red-100 dark:bg-red-900/40 ring-2 ring-red-500'
-                            : selectedAnswer === 'False'
-                                ? 'border-red-600 bg-red-500/20 ring-2 ring-red-500 text-white'
-                                : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-red-400 text-white',
-                    (disabled || isAdmin) ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
-                ]"
-            >
-                <div class="flex items-center justify-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" :class="(isRevealed && isChoiceCorrect('False')) || selectedAnswer === 'False' ? (isRevealed && !isChoiceCorrect('False') ? 'text-red-600' : 'text-red-600') : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" :class="(isRevealed && tfChoice.is_correct) || selectedAnswer == tfChoice.id ? (isRevealed && !tfChoice.is_correct ? 'text-red-600' : 'text-red-500') : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    <span class="text-2xl font-bold">FALSE</span>
+                    <span class="text-2xl font-bold uppercase">{{ tfChoice.text }}</span>
                 </div>
             </button>
         </div>
@@ -181,16 +173,14 @@ const isChoiceCorrect = (text) => {
                 v-model="selectedAnswer"
                 :disabled="disabled || isAdmin"
                 :class="[
-                    'w-full p-6 text-lg text-center border-2 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-75 disabled:bg-gray-100 dark:disabled:bg-gray-800',
+                    'w-full p-6 text-lg text-center border-2 rounded-xl focus:ring-2 transition-all disabled:opacity-75',
                     isRevealed
                         ? (String(selectedAnswer || '').trim().toLowerCase() === String(question.question_data.correct_answer || '').trim().toLowerCase()
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-bold'
-                            : 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-bold')
-                        : 'border-white/20 bg-white/5 text-white focus:border-purple-500'
+                            ? 'border-green-500 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 font-bold'
+                            : 'border-red-500 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 font-bold')
+                        : 'border-white/20 bg-white/5 text-white focus:border-purple-500 focus:ring-purple-500'
                 ]"
                 :placeholder="isAdmin ? 'Participants will type answer here...' : 'Enter your answer here...'"
-                :hidden="isAdmin"
-                class="w-full p-6 text-lg text-center border-2 border-white/20 bg-white/5 text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-all disabled:opacity-75 disabled:bg-white/10"
             />
         </div>
 

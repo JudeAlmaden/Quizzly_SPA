@@ -26,7 +26,7 @@ const gamePhase = computed(() => {
     if (!props.selectedQuestion) return 'waiting';
     if (props.selectedQuestion.is_revealed) return 'revealed';
     if (props.isAnswerSubmitted) return 'submitted';
-    if (props.selectedQuestion.accepting_answers) return 'answering';
+    if (props.selectedQuestion.accepting_answers || countdown.value > 0) return 'answering';
     return 'ready'; // Question selected but not yet answering
 });
 
@@ -100,7 +100,7 @@ onUnmounted(() => {
     <div class="border-t-4 border-purple-600 shadow-lg text-white" style="background-color: rgba(33, 0, 70, 0.8)">
         <div class="max-w-7xl mx-auto px-6 py-3">
             
-            <!-- Waiting Phase -->
+            <!-- Phase Switcher -->
             <div v-if="gamePhase === 'waiting'" class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <div class="bg-purple-100 dark:bg-purple-900 p-3 rounded-full">
@@ -129,7 +129,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Ready Phase -->
-            <div v-if="gamePhase === 'ready'" class="flex items-center justify-between gap-4">
+            <div v-else-if="gamePhase === 'ready'" class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                      <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-full animate-pulse">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,19 +138,19 @@ onUnmounted(() => {
                     </div>
                     <div>
                         <h3 class="text-lg font-bold text-white">Get Ready!</h3>
-                        <p class="text-sm text-indigo-200">Question is loading...</p>
+                        <p class="text-sm text-indigo-200">Question selected. Starting soon...</p>
                     </div>
                 </div>
 
                  <div class="flex items-center gap-6">
                     <!-- Score -->
-                    <div class="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-lg px-6 py-3">
+                    <div class="flex items-center gap-3 bg-white/10 rounded-lg px-6 py-3 border border-white/10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                         </svg>
                         <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Score</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ userScore }}</p>
+                            <p class="text-xs text-indigo-200">Score</p>
+                            <p class="text-2xl font-bold text-white">{{ userScore }}</p>
                         </div>
                     </div>
                 </div>

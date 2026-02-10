@@ -99,6 +99,10 @@ class QuizController extends Controller
              }
         }
 
+        $userScore = \App\Models\AnswerHistory::where('quiz_id', $quiz->id)
+            ->where('user_id', auth()->id())
+            ->sum('points');
+
         return \Inertia\Inertia::render('Game', [
             'quiz' => $quiz,
             'selectedQuestion' => $selectedQuestion,
@@ -107,6 +111,7 @@ class QuizController extends Controller
             'isAdmin' => false,
             'hasAnswered' => $hasAnswered,
             'userAnswer' => $userAnswer,
+            'userScore' => $userScore,
         ]);
     }
 
@@ -175,7 +180,10 @@ class QuizController extends Controller
                  $userAnswer = $history->answer;
              }
         }
-            
+        $userScore = \App\Models\AnswerHistory::where('quiz_id', $quiz->id)
+            ->where('user_id', auth()->id())
+            ->sum('points');
+
         return \Inertia\Inertia::render('Game', [
             'quiz' => $quiz,
             'selectedQuestion' => $selectedQuestion,
@@ -184,6 +192,7 @@ class QuizController extends Controller
             'isAdmin' => auth()->id() === $quiz->creator_id,
             'hasAnswered' => $hasAnswered,
             'userAnswer' => $userAnswer,
+            'userScore' => $userScore,
         ]);
     }
 

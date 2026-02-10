@@ -19,7 +19,7 @@ let animationFrameId = null;
 const gamePhase = computed(() => {
     if (!props.selectedQuestion) return 'selection';
     if (props.selectedQuestion.is_revealed) return 'revealed';
-    if (props.selectedQuestion.timer_started_at) return 'timer';
+    if (props.selectedQuestion.timer_started_at || countdown.value > 0) return 'timer';
     return 'ready'; // Question selected but timer not started
 });
 
@@ -39,6 +39,7 @@ const startTimer = () => {
         duration: timerDuration.value,
     }, {
         preserveScroll: true,
+        preserveState: true,
     });
 };
 
@@ -46,15 +47,14 @@ const emit = defineEmits(['reveal']);
 
 const revealAnswer = () => {
     // Emit optimistic update event logic to parent
-    emit('reveal');
-
-    router.post(route('game.revealAnswer', props.selectedQuestion.id), {
-        preserveScroll: true,
-    });
+    emit('reveal', props.selectedQuestion.id);
 };
 
 const nextQuestion = () => {
-    router.post(route('game.nextQuestion', props.quiz.id));
+    router.post(route('game.nextQuestion', props.quiz.id), {}, {
+        preserveScroll: true,
+        preserveState: true,
+    });
 };
 
 const startTimerFromTimestamp = (timerEndsAt) => {
@@ -99,28 +99,20 @@ onMounted(() => {
     if (window.Echo) {
         window.Echo.channel(`quiz.${props.quiz.id}`)            
             .listen('.timer.started', (e) => {
-                console.log('Admin: Timer started', e);
-                // Start timer using server timestamp
+                console.log('Admin: Timer started');
                 startTimerFromTimestamp(e.timer_ends_at);
-            })
-            .listen('.answer.revealed', (e) => {
-                console.log('Admin: Answer revealed', e);
-                // Updated via prop, no reload needed
             });         
     }
 });
 
 onUnmounted(() => {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    if (window.Echo) {
-        window.Echo.leave(`quiz.${props.quiz.id}`);
-    }
 });
 </script>
 
 <template>
     <div class="border-t-4 border-indigo-600 shadow-lg text-white" style="background-color: rgba(33, 0, 70, 0.8)">
-        <div class="max-w-7xl mx-auto px-6" :class="gamePhase === 'ready' ? 'py-2' : 'py-4'">
+        <div class="max-w-7xl mx-auto px-6 py-4">
             
             <!-- Selection Phase -->
             <div v-if="gamePhase === 'selection'" class="flex items-center justify-center gap-4">
@@ -158,9 +150,13 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Ready Phase (Question selected, timer not started) - Empty state -->
-            <div v-else-if="gamePhase === 'ready'" class="flex items-center justify-center gap-4">
-                <!-- Timer setup is shown in the bottom bar -->
+            <!-- Ready Phase -->
+            <div v-else-if="gamePhase === 'ready'" class="flex items-center justify-center gap-6">
+                 <div class="bg-blue-100/10 px-4 py-2 rounded-lg border border-blue-500/20">
+                    <span class="text-sm font-semibold text-blue-200 animate-pulse">
+                        Ready to Start Timer
+                    </span>
+                </div>
             </div>
 
             <!-- Timer Phase -->
@@ -175,15 +171,6 @@ onUnmounted(() => {
                             {{ formatTime(countdown) }}
                         </span>
                     </div>
-                   
-                    <!-- Restart Timer Button -->
-                     <button
-                        @click="startTimer"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- Center: Timer Controls -->
@@ -231,7 +218,7 @@ onUnmounted(() => {
                 
                 <!-- Left: Status -->
                 <div class="flex items-center gap-3">
-                    <div class="bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-lg">
+                    <div class="bg-green-100 dark:bg-green-900/30 px-4 py-2.5 h-11 rounded-lg flex items-center border border-green-500/30">
                         <span class="text-sm font-semibold text-green-700 dark:text-green-400">
                             Answer Revealed
                         </span>
@@ -239,7 +226,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Center: Next Question -->
-                <div class="flex justify-center flex-1">
+                <div class="flex justify-center">
                     <button
                         @click="nextQuestion"
                         class="px-6 py-2.5 h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2 text-sm"

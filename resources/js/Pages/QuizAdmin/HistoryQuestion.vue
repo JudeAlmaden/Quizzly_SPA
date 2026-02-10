@@ -1,5 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     quiz: Object,
@@ -20,6 +21,21 @@ const toggleStatus = (answerId) => {
 const goBack = () => {
     window.history.back();
 };
+
+const getAnswerText = (answer) => {
+    if (!props.question.question_data.choices) return answer;
+    // Cross-reference ID with choices array
+    const choice = props.question.question_data.choices.find(c => String(c.id) === String(answer));
+    return choice ? choice.text : answer;
+};
+
+const displayCorrectAnswer = computed(() => {
+    if (props.question.question_data.type === 'Identification') {
+        return props.question.question_data.correct_answer;
+    }
+    const correctChoice = props.question.question_data.choices?.find(c => c.is_correct);
+    return correctChoice ? correctChoice.text : 'N/A';
+});
 </script>
 
 <template>
@@ -50,7 +66,7 @@ const goBack = () => {
                      <div class="flex justify-center gap-4 text-sm mb-2">
                         <span class="px-3 py-1 bg-white/20 rounded-full text-white backdrop-blur-sm">{{ question.question_data.type }}</span>
                         <span class="px-3 py-1 bg-green-500/20 text-green-300 rounded-full border border-green-500/30 backdrop-blur-sm">
-                            Correct: {{ question.question_data.correct_answer }}
+                            Correct: {{ displayCorrectAnswer }}
                         </span>
                         <span class="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500/30 backdrop-blur-sm">
                              {{ question.points }} Pts
@@ -107,7 +123,7 @@ const goBack = () => {
 
                             <!-- Answer -->
                              <div class="col-span-4">
-                                <span class="block font-bold uppercase text-gray-800 text-lg">{{ entry.answer }}</span>
+                                <span class="block font-bold uppercase text-gray-800 text-lg">{{ getAnswerText(entry.answer) }}</span>
                                 <span 
                                     class="text-xs font-bold uppercase"
                                     :class="entry.is_correct ? 'text-green-700' : 'text-red-600'"

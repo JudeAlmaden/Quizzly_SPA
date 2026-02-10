@@ -15,59 +15,105 @@ const props = defineProps({
     isAdmin: Boolean,
     hasAnswered: Boolean,
     userAnswer: [String, Number],
+    userScore: Number,
 });
 
-const userScore = ref(0);
+const localUserScore = ref(props.userScore || 0);
 const isAnswerSubmitted = ref(props.hasAnswered);
 const currentQuestion = ref(props.selectedQuestion);
+const isAcceptingAnswers = ref(props.selectedQuestion?.accepting_answers || false);
+const localUserAnswer = ref(props.userAnswer || null);
 
 watch(() => props.hasAnswered, (newVal) => {
     isAnswerSubmitted.value = newVal;
 });
 
-watch(() => props.selectedQuestion, (newVal) => {
-    currentQuestion.value = newVal;
+watch(() => props.userScore, (newVal) => {
+    localUserScore.value = newVal || 0;
+});
+
+watch(() => props.userAnswer, (newVal) => {
+    localUserAnswer.value = newVal;
+});
+
+watch(() => props.selectedQuestion, (newVal, oldVal) => {
+    // If it's a completely new question, reset state
+    if (newVal?.id !== currentQuestion.value?.id) {
+        currentQuestion.value = newVal;
+        isAcceptingAnswers.value = newVal?.accepting_answers || false;
+        localUserAnswer.value = null; // Reset selection on new question
+        // Don't reset isAnswerSubmitted here if it's just a data sync, 
+        // but it's handled in the .selected listener anyway
+    } else if (newVal) {
+        // If it's the same question (sync update), only enable if server says so
+        // but DON'T disable if we already set it to true locally via WebSocket
+        if (newVal.accepting_answers) {
+            isAcceptingAnswers.value = true;
+        }
+        currentQuestion.value = newVal;
+    }
 });
 
 onMounted(() => {
      if (props.quiz?.id && window.Echo) {
-        window.Echo.channel(`quiz.${props.quiz.id}`)
+        const channelName = `quiz.${props.quiz.id}`;
+        
+        // Clean up any existing listeners on this channel to prevent duplicates
+        window.Echo.leave(channelName);
+
+        window.Echo.channel(channelName)
             .listen('.question.selected', (e) => {
                 console.log('Game: Question selected', e);
-                // Reload to get the new question data from the server
-                router.reload({
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        isAnswerSubmitted.value = false;
-                    }
-                });
+                // Update state immediately from event data
+                currentQuestion.value = e.question;
+                isAnswerSubmitted.value = false;
+                isAcceptingAnswers.value = e.question.accepting_answers;
+                localUserAnswer.value = null; // Clear answer for new question
+                
+                // Optional: still reload in background to sync any other server state
+                // but we already have the critical question data
+                router.reload({ preserveScroll: true });
             })
             .listen('.timer.started', (e) => {
                 console.log('Game: Timer started', e);
+                isAcceptingAnswers.value = true;
                 if (currentQuestion.value) {
+                    // Update the existing ref to trigger reactivity
                     currentQuestion.value = {
                         ...currentQuestion.value,
                         accepting_answers: true,
-                        timer_started_at: new Date().toISOString(), // Fallback if server time is slightly off
+                        timer_started_at: new Date().toISOString(),
                         timer_duration: e.duration
                     };
                 }
             })
             .listen('.answer.revealed', (e) => {
+                console.log('Game: Answer revealed', e);
+                isAcceptingAnswers.value = false;
                 if (currentQuestion.value && currentQuestion.value.id === e.question.id) {
-                     // Update local state without reload
                      currentQuestion.value = {
                         ...currentQuestion.value,
                         is_revealed: true,
                         accepting_answers: false
                      };
                 }
+                // Refresh score when answer is revealed
+                router.reload({ only: ['userScore'], preserveScroll: true });
             })
             .listen('.next.question', (e) => {
+                console.log('Game: Next question event');
                 currentQuestion.value = null;
                 isAnswerSubmitted.value = false;
+                isAcceptingAnswers.value = false;
+                localUserAnswer.value = null;
             });
      }
+});
+
+onUnmounted(() => {
+    if (props.quiz?.id && window.Echo) {
+        window.Echo.leave(`quiz.${props.quiz.id}`);
+    }
 });
 
 const submitAnswer = (answer) => {
@@ -81,18 +127,40 @@ const submitAnswer = (answer) => {
     });
 };
 
-const onReveal = () => {
+const onReveal = (questionId) => {
+    // Optimistic update
     if (currentQuestion.value) {
+        isAcceptingAnswers.value = false;
         currentQuestion.value = { 
             ...currentQuestion.value, 
             is_revealed: true, 
-            accepting_answers: false 
+             accepting_answers: false 
         };
     }
+
+    router.post(route('game.revealAnswer', questionId), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+             // Sync state just in case, though listener also handles it
+            if (currentQuestion.value) {
+                 currentQuestion.value.is_revealed = true;
+            }
+        }
+    });
 };
 
 const nextQuestion = () => {
-    router.post(route('game.nextQuestion', props.quiz.id));
+    router.post(route('game.nextQuestion', props.quiz.id), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            currentQuestion.value = null;
+            isAnswerSubmitted.value = false;
+            localUserAnswer.value = null;
+            isAcceptingAnswers.value = false;
+        }
+    });
 };
 </script>
 
@@ -133,8 +201,8 @@ const nextQuestion = () => {
                     :question="currentQuestion"
                     :isAdmin="isAdmin"
                     :isRevealed="!!currentQuestion.is_revealed"
-                    :disabled="isAdmin || isAnswerSubmitted || !currentQuestion.accepting_answers" 
-                    :userAnswer="userAnswer"
+                    :disabled="isAdmin || isAnswerSubmitted || !isAcceptingAnswers" 
+                    :userAnswer="localUserAnswer"
                     @submit="submitAnswer"
                     class="mt-6 w-full max-w-3xl mx-auto"
                 />
@@ -172,7 +240,7 @@ const nextQuestion = () => {
                 v-else
                 :quiz="quiz"
                 :selectedQuestion="currentQuestion"
-                :userScore="userScore"
+                :userScore="localUserScore"
                 :isAnswerSubmitted="isAnswerSubmitted"
                 :remainingTime="remainingTime"
                 @timer-ended="currentQuestion.accepting_answers = false"
