@@ -13,7 +13,7 @@ const props = defineProps({
 const selectedCategory = ref(null);
 const timerDuration = ref(30);
 const countdown = ref(props.remainingTime || 0);
-const timerInterval = ref(null);
+let animationFrameId = null;
 
 // Computed phase
 const gamePhase = computed(() => {
@@ -39,10 +39,6 @@ const startTimer = () => {
         duration: timerDuration.value,
     }, {
         preserveScroll: true,
-        onSuccess: () => {
-            countdown.value = timerDuration.value;
-            startCountdown();
-        },
     });
 };
 
@@ -61,16 +57,22 @@ const nextQuestion = () => {
     router.post(route('game.nextQuestion', props.quiz.id));
 };
 
-const startCountdown = () => {
-    if (timerInterval.value) clearInterval(timerInterval.value);
+const startTimerFromTimestamp = (timerEndsAt) => {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
     
-    timerInterval.value = setInterval(() => {
-        if (countdown.value > 0) {
-            countdown.value--;
-        } else {
-            clearInterval(timerInterval.value);
+    const endTime = new Date(timerEndsAt);
+    
+    const updateCountdown = () => {
+        const now = new Date();
+        const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+        countdown.value = remaining;
+        
+        if (remaining > 0) {
+            animationFrameId = requestAnimationFrame(updateCountdown);
         }
-    }, 1000);
+    };
+    
+    updateCountdown();
 };
 
 const formatTime = (seconds) => {
@@ -82,16 +84,16 @@ const formatTime = (seconds) => {
 
 // Watch for prop changes from Inertia reloads
 watch(() => props.remainingTime, (newVal) => {
-    if (newVal !== undefined) {
+    if (newVal !== undefined && newVal > 0) {
         countdown.value = Math.floor(newVal);
-        if (newVal > 0) startCountdown();
     }
 });
 
 onMounted(() => {
-    if (props.remainingTime && props.remainingTime > 0) {
-        countdown.value = Math.floor(props.remainingTime);
-        startCountdown();
+    if (props.selectedQuestion?.timer_started_at && props.selectedQuestion?.timer_duration) {
+        const endTime = new Date(props.selectedQuestion.timer_started_at);
+        endTime.setSeconds(endTime.getSeconds() + props.selectedQuestion.timer_duration);
+        startTimerFromTimestamp(endTime.toISOString());
     }
 
     if (window.Echo) {
@@ -102,11 +104,8 @@ onMounted(() => {
             })
             .listen('.timer.started', (e) => {
                 console.log('Admin: Timer started', e);
-                // Immediately start timer for better UX
-                countdown.value = e.duration;
-                startCountdown();
-                // Then reload to sync state
-                router.reload();
+                // Start timer using server timestamp
+                startTimerFromTimestamp(e.timer_ends_at);
             })
             .listen('.answer.revealed', (e) => {
                 console.log('Admin: Answer revealed', e);
@@ -116,7 +115,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    if (timerInterval.value) clearInterval(timerInterval.value);
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if (window.Echo) {
         window.Echo.leave(`quiz.${props.quiz.id}`);
     }

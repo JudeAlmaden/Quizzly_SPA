@@ -20,7 +20,7 @@ const props = defineProps({
 });
 
 const countdown = ref(props.remainingTime || 0);
-const timerInterval = ref(null);
+let animationFrameId = null;
 
 const gamePhase = computed(() => {
     if (!props.selectedQuestion) return 'waiting';
@@ -37,33 +37,40 @@ const formatTime = (seconds) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-const startCountdown = () => {
-    if (timerInterval.value) clearInterval(timerInterval.value);
+const startTimerFromTimestamp = (timerEndsAt) => {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
     
-    timerInterval.value = setInterval(() => {
-        if (countdown.value > 0) {
-            countdown.value--;
+    const endTime = new Date(timerEndsAt);
+    
+    const updateCountdown = () => {
+        const now = new Date();
+        const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+        countdown.value = remaining;
+        
+        if (remaining > 0) {
+            animationFrameId = requestAnimationFrame(updateCountdown);
         } else {
-            clearInterval(timerInterval.value);
             emit('timer-ended');
         }
-    }, 1000);
+    };
+    
+    updateCountdown();
 };
 
 
 
 // Watch for prop changes from Inertia reloads
 watch(() => props.remainingTime, (newVal) => {
-    if (newVal !== undefined) {
+    if (newVal !== undefined && newVal > 0) {
         countdown.value = Math.floor(newVal);
-        if (newVal > 0) startCountdown();
     }
 });
 
 onMounted(() => {
-    if (props.remainingTime && props.remainingTime > 0) {
-        countdown.value = Math.floor(props.remainingTime);
-        startCountdown();
+    if (props.selectedQuestion?.timer_started_at && props.selectedQuestion?.timer_duration) {
+        const endTime = new Date(props.selectedQuestion.timer_started_at);
+        endTime.setSeconds(endTime.getSeconds() + props.selectedQuestion.timer_duration);
+        startTimerFromTimestamp(endTime.toISOString());
     }
     if (window.Echo) {
         window.Echo.channel(`quiz.${props.quiz.id}`)
@@ -73,11 +80,8 @@ onMounted(() => {
             })
             .listen('.timer.started', (e) => {
                 console.log('Participant: Timer started', e);
-                // Immediately start user timer for better UX
-                countdown.value = e.duration;
-                startCountdown();
-                // Then reload to sync state
-                router.reload();
+                // Start timer using server timestamp
+                startTimerFromTimestamp(e.timer_ends_at);
             })
             .listen('.answer.revealed', (e) => {
                 console.log('Participant: Answer revealed', e);
@@ -87,7 +91,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    if (timerInterval.value) clearInterval(timerInterval.value);
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if (window.Echo) {
         window.Echo.leave(`quiz.${props.quiz.id}`);
     }
