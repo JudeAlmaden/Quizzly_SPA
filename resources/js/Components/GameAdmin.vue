@@ -120,14 +120,16 @@ onUnmounted(() => {
                     <label class="text-sm font-semibold text-white">Select Category:</label>
                     <select
                         v-model="selectedCategory"
-                        class="px-4 py-2.5 h-11 border border-white/20 bg-white/10 text-white rounded-lg focus:ring-2 focus:ring-purple-500 placeholder-white/50"
+                        class="px-4 py-2.5 h-11 border border-white/20 bg-white/10 text-black dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 placeholder-white/50"
                     >
-                        <option :value="null">Choose a category...</option>
-                        <option
+                        <option :value="null" class="text-black dark:text-white" style="color: black !important;">Choose a category...</option>
+                        <option 
                             v-for="category in categories"
                             :key="category.id"
                             :value="category.id"
                             :disabled="category.questions_count === 0"
+                            class="text-black dark:text-white"
+                            style="color: black !important;"
                         >
                             {{ category.name }} ({{ category.questions_count }} unasked)
                         </option>
