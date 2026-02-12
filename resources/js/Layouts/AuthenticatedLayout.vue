@@ -15,7 +15,7 @@ const { breadcrumbs } = useBreadcrumbs();
 <template>
     <div class="min-h-screen bg-gradient-to-br from-indigo-800 via-purple-800 to-purple-700">
         <nav
-            class="border-b border-purple-500/20 bg-purple-900/40 backdrop-blur-md dark:border-purple-700/30 dark:bg-purple-900/50"
+            class="relative z-50 border-b border-purple-500/20 bg-purple-900/40 backdrop-blur-md dark:border-purple-700/30 dark:bg-purple-900/50"
         >
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -165,11 +165,12 @@ const { breadcrumbs } = useBreadcrumbs();
                             </div>
                         </div>
 
-                        <div class="mt-3 space-y-1">
+                        <div id="responsive-nav" class="mt-3 space-y-1 " >
                             <ResponsiveNavLink :href="route('profile.edit')">
                                 Profile
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
+                                
                                 :href="route('logout')"
                                 method="post"
                                 as="button"
@@ -308,5 +309,11 @@ const { breadcrumbs } = useBreadcrumbs();
     100% {
         transform: translate(-60%, -60%);
     }
+}
+</style>
+
+<style>
+#responsive-nav {
+    z-index: 1000 !important;
 }
 </style>

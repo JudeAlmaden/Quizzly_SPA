@@ -62,6 +62,7 @@ QuizzlySpa is a modern, real-time quiz application built with **Laravel**, **Vue
    npm run build
    php artisan reverb:start --host=0.0.0.0 --port=8080
    php artisan queue:listen
+   php artisan queue:work --daemon
    php artisan serve --host=0.0.0.0
    ```
 

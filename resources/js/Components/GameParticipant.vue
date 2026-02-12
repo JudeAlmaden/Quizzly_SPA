@@ -113,19 +113,6 @@ onUnmounted(() => {
                         <p class="text-sm text-indigo-200">Waiting for next question...</p>
                     </div>
                 </div>
-
-                <div class="flex items-center gap-6">
-                    <!-- Score -->
-                    <div class="flex items-center gap-3 bg-white/10 rounded-lg px-6 py-3 border border-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                        </svg>
-                        <div>
-                            <p class="text-xs text-indigo-200">Score</p>
-                            <p class="text-2xl font-bold text-white">{{ userScore }}</p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Ready Phase -->

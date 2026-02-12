@@ -7,7 +7,7 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 5173,
         hmr: {
-            host: '192.168.1.22',   //Change to your local IP for deployment
+            host: '192.168.0.121',   //Change to your local IP for deployment
         },
         cors: true,
     },
