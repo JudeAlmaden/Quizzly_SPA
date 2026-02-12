@@ -169,6 +169,7 @@ const isChoiceCorrect = (text) => {
              </div>
 
             <input
+                v-if="!isAdmin"
                 type="text"
                 v-model="selectedAnswer"
                 :disabled="disabled || isAdmin"
@@ -180,7 +181,7 @@ const isChoiceCorrect = (text) => {
                             : 'border-red-500 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 font-bold')
                         : 'border-white/20 bg-white/5 text-white focus:border-purple-500 focus:ring-purple-500'
                 ]"
-                :placeholder="isAdmin ? 'Participants will type answer here...' : 'Enter your answer here...'"
+                placeholder="Enter your answer here..."
             />
         </div>
 

@@ -1,75 +1,20 @@
-<?php
-
-namespace Database\Seeders;
-
-use App\Models\User;
-use App\Models\Quiz;
-use App\Models\Category;
-use App\Models\Question;
-use App\Models\QuizParticipant;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-
-class StemOlympiadSeeder extends Seeder
-{
-    use WithoutModelEvents;
-
-    public function run(): void
-    {
-        // Retrieve Admin
-        $admin = User::where('email', 'judealmaden2045@gmail.com')->first();
-
-        // Retrieve Players
-        $players = User::whereIn('email', [
-            'player1@gmail.com',
-            'player2@gmail.com',
-            'player3@gmail.com',
-            'player4@gmail.com',
-            'player5@gmail.com',
-            'player6@gmail.com',
-        ])->get();
-
-        if (!$admin) {
-            // Fallback if seeded out of order, though AccountsSeeder should run first
-             $admin = User::create([
-                'name' => 'Jude Almaden',
-                'email' => 'judealmaden2045@gmail.com',
-                'password' => Hash::make('password123'),
-            ]);
-        }
-
-        // 1. Create Quiz
-        $quiz = Quiz::firstOrCreate(
-            ['name' => 'SHS STEM OLYMPIAD 2026'],
-            [
-                'description' => 'A comprehensive quiz testing your knowledge across various difficulty levels.',
-                'creator_id' => $admin->id,
-                'quiz_code' => 'STM26',
-            ]
-        );
-
-        // 2. Attach Players to Quiz
-        foreach ($players as $player) {
-            QuizParticipant::firstOrCreate(
-                [
-                    'quiz_id' => $quiz->id,
-                    'user_id' => $player->id,
-                ],
-                [
-                    'status' => 'joined'
-                ]
-            );
-        }
-
-        // 3. Create Categories
-        $easy = Category::firstOrCreate(['name' => 'Easy', 'quiz_id' => $quiz->id]);
-        $average = Category::firstOrCreate(['name' => 'Average', 'quiz_id' => $quiz->id]);
-        $difficult = Category::firstOrCreate(['name' => 'Difficult', 'quiz_id' => $quiz->id]);
-$tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $quiz->id]);
-
-        // 4. Create Easy Questions (15 seconds timer)
-        $easyQuestions = [
+      $easyQuestions = [
+            // Identification
+            // [
+            //     'type' => 'Identification',
+            //     'q' => 'Calculate the quantity of heat required to raise the temperature of 11 kg of water from 10°C to 100°C. Assume the specific heat capacity of water is 4200 J/(kg·°C). Express your answer in MJ.',
+            //     'a' => '4.158 MJ',
+            // ],
+            // [
+            //     'type' => 'Identification',
+            //     'q' => 'The wavelength of light in glass (n = 1.5) is 450 mm. What is the wavelength of this light in diamond (n = 2.42)?',
+            //     'a' => '278.93 mm',
+            // ],
+            // [
+            //     'type' => 'Identification',
+            //     'q' => 'Light strikes an air (n = 1)–water boundary with an angle of incidence of 30°. Calculate the refracted angle in water (n = 1.333).',
+            //     'a' => '22°',
+            // ],
             [
                 'type' => 'Identification',
                 'q' => 'A 2 kg object accelerates at 3 m/s². Find the force.',
@@ -83,7 +28,7 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
             [
                 'type' => 'Identification',
                 'q' => 'The complex number 5 – 3i is divided by 2 – i. Find the quotient.',
-                'a' => '(13 - i)/5', 
+                'a' => '(13 - i)/5', // Normalized answer
             ],
             [
                 'type' => 'Identification',
@@ -100,6 +45,17 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                 'q' => 'Four years ago, the sum of the ages of A and B was 45. Six years from now, twice B’s age will be 28 years more than A’s age by then. How old is A now?',
                 'a' => '28',
             ],
+            // MCQ
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'In A triangle BCD, BC = 25, and CD =10. The perimeter of the triangle may be? ',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => '70', 'is_correct' => false],
+            //         ['id' => 2, 'text' => '71', 'is_correct' => false],
+            //         ['id' => 3, 'text' => '69', 'is_correct' => true],
+            //         ['id' => 4, 'text' => '89', 'is_correct' => false],
+            //     ]
+            // ],
             [
                 'type' => 'MCQ',
                 'q' => 'What is the World’s Tallest Free – Standing Structure?',
@@ -110,6 +66,36 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                     ['id' => 4, 'text' => 'Abraj Al-Bait Clock Tower', 'is_correct' => false],
                 ]
             ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'What is the force produced by two moving surfaces in contact called?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Tension', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Compression', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Friction', 'is_correct' => true],
+            //         ['id' => 4, 'text' => 'None of the Above', 'is_correct' => false],
+            //     ]
+            // ],
+            [
+                'type' => 'MCQ',
+                'q' => 'A process or set of rules to be followed in calculations or other problem solving operations, especially by a computer.',
+                'choices' => [
+                    ['id' => 1, 'text' => 'Law', 'is_correct' => false],
+                    ['id' => 2, 'text' => 'Program', 'is_correct' => false],
+                    ['id' => 3, 'text' => 'Algorithm', 'is_correct' => true],
+                    ['id' => 4, 'text' => 'None of the Above', 'is_correct' => false],
+                ]
+            ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'In civil engineering, what is the purpose of a retaining wall?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Flood Prevention', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Noise Reduction', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Slope Stabilization', 'is_correct' => true],
+            //         ['id' => 4, 'text' => 'Foundation Support', 'is_correct' => false],
+            //     ]
+            // ],
             [
                 'type' => 'MCQ',
                 'q' => 'A characteristic of measurement that indicates the closeness of two or more measurements to each other, regardless of whether or not they are accurate.',
@@ -130,12 +116,101 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                     ['id' => 4, 'text' => 'Aristotle', 'is_correct' => false],
                 ]
             ],
-            
+            //  [
+            //     'type' => 'MCQ',
+            //     'q' => 'What is the solution of an equation called?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Variable', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Constant', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Root', 'is_correct' => true],
+            //         ['id' => 4, 'text' => 'Coefficient', 'is_correct' => false],
+            //     ]
+            // ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'What branch of math deals with shapes and space?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Algebra', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Statistics', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Calculus', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'Geometry', 'is_correct' => true],
+            //     ]
+            // ],
+            //  [
+            //     'type' => 'MCQ',
+            //     'q' => ' Who introduced coordinate geometry?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Pascal', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Fermat', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Leibniz', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'René Descartes', 'is_correct' => true],
+            //     ]
+            // ],
+            //  [
+            //     'type' => 'MCQ',
+            //     'q' => 'What is the value of 0! (zero factorial)? ',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => '0', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Undefined', 'is_correct' => false],
+            //         ['id' => 3, 'text' => '-1', 'is_correct' => false],
+            //         ['id' => 4, 'text' => '1', 'is_correct' => true],
+            //     ]
+            // ],
         ];
 
         // 5. Create Average Questions (30 seconds timer)
         $averageQuestions = [
-            
+            // MCQ
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'What is the slope of a horizontal line?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => '1', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Undefined', 'is_correct' => false],
+            //         ['id' => 3, 'text' => '-1', 'is_correct' => false],
+            //         ['id' => 4, 'text' => '0', 'is_correct' => true],
+            //     ]
+            // ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'The formula (a^2 + b^2 = c^2) applies to: ',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Any triangle ', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Isoceles triangle ', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Equilateral triangle ', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'Right triangle ', 'is_correct' => true],
+            //     ]
+            // ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'Who is the father of calculus',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Newton', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Descartes', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Leibniz', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'Newton and Leibniz', 'is_correct' => true],
+            //     ]
+            // ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'What does the term "PID" stand for in controls systems engineering?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Proportional, Integral, Differential', 'is_correct' => true],
+            //         ['id' => 2, 'text' => 'Power Input Device', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Process Identification Data', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'Programmable Interface Device', 'is_correct' => false],
+            //     ]
+            // ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'What "A" Word is a watercourse engineered to carry a water from a source to a distribution point? It was most famously used in Ancient Rome.',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Aquifer', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Artesian Well', 'is_correct' => false],
+            //         ['id' => 3, 'text' => 'Aquatic Canal', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'Aqueduct', 'is_correct' => true],
+            //     ]
+            // ],
             [
                 'type' => 'MCQ',
                 'q' => 'What is the determinant of a 2×2 matrix?',
@@ -166,6 +241,16 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                     ['id' => 4, 'text' => 'Copper', 'is_correct' => false],
                 ]
             ],
+            // [
+            //     'type' => 'MCQ',
+            //     'q' => 'What sub-field of civil engineering safeguards against misuse of resources?',
+            //     'choices' => [
+            //         ['id' => 1, 'text' => 'Traffic Engineering', 'is_correct' => false],
+            //         ['id' => 2, 'text' => 'Environmental Engineering', 'is_correct' => true],
+            //         ['id' => 3, 'text' => 'Mining Engineering', 'is_correct' => false],
+            //         ['id' => 4, 'text' => 'Water Resource Engineering', 'is_correct' => false],
+            //     ]
+            // ],
             [
                 'type' => 'MCQ',
                 'q' => 'Which principle explains buoyant force equal to the weight of displaced fluid?',
@@ -176,6 +261,13 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                     ['id' => 4, 'text' => "Saint-Venant’s Principle", 'is_correct' => false],
                 ]
             ],
+
+            // Identification
+            // [
+            //     'type' => 'Identification',
+            //     'q' => 'A projectile is launched at 20 m/s at 30°. Find range. Use g = 9.81m/s2',
+            //     'a' => '35.3 m',
+            // ],
             [
                 'type' => 'Identification',
                 'q' => 'On the Genotype AaBb × AaBb. What is the Probability of Aabb?',
@@ -186,6 +278,11 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                 'q' => 'A body moves such that its velocity is given by v(t) = 4t + 2. Find the displacement from t = 1 s to t = 4 s.',
                 'a' => '36 m',
             ],
+            // [
+            //     'type' => 'Identification',
+            //     'q' => 'How many grams of NaCl are formed when 0.5 mol of Na reacts completely? (Molar mass of NaCl = 58.5 g/mol) 2Na + Cl2 → 2NaCl',
+            //     'a' => '29.25 g',
+            // ],
             [
                 'type' => 'Identification',
                 'q' => 'A solid disk rolls without slipping. Find the ratio of translational kinetic energy to rotational kinetic energy.',
@@ -201,11 +298,22 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                 'q' => 'Suppose you receive x dollars in January and $100 more each month until April. Write the factored polynomial for the total.',
                 'a' => '4(x + 150)',
             ],
+            // [
+            //     'type' => 'Identification',
+            //     'q' => 'Find A: 2x+3/(x+4)(x−5) = A/(x+4) + B/(x−5)',
+            //     'a' => '5/9',
+            // ],
             [
                 'type' => 'Identification',
-                'q' => 'The sum of the parents’ ages is twice the sum of the children’s ages. Four years ago, the sum of the parents’ ages was thrice the sum of the children’s ages. In 16 years, the sum of the ages of the parents and children will be equal. How many children are there?',
+                'q' => 'How many children are there given the age conditions described?',
                 'a' => '6',
             ],
+            // [
+            //     'type' => 'Identification',
+            //     'q' => "Ramir can do a job in 1hr, Paul can do it in 2hrs, and Dona can do it in 3hrs. How 
+            //     long will it take them to the job by working together",
+            //     'a' => '0.55 hrs',
+            // ],
         ];
 
         // 6. Create Hard Questions (60 seconds timer)
@@ -529,102 +637,3 @@ $tieBreaker = Category::firstOrCreate(['name' => 'Tie Breaker', 'quiz_id' => $qu
                 'a' => 'dx/dy = 1/(1+y^2)',
             ],
         ];
-            
-
-        //Attach questions to quiz
-        foreach ($easyQuestions as $item) {
-            // Check if question already exists to avoid duplicates
-            $exists = Question::where('quiz_id', $quiz->id)
-                ->where('category_id', $easy->id)
-                ->where('question_data->question_text', $item['q'])
-                ->exists();
-
-            if ($exists) {
-                continue;
-            }
-
-            $questionData = [
-                'type' => $item['type'],
-                'question_text' => $item['q'],
-                'timer_seconds' => 15, // 15 seconds timer
-            ];
-
-            if ($item['type'] === 'Identification') {
-                $questionData['correct_answer'] = $item['a'];
-            } elseif ($item['type'] === 'MCQ') {
-                $questionData['choices'] = $item['choices'];
-            }
-
-            Question::create([
-                'category_id' => $easy->id,
-                'quiz_id' => $quiz->id,
-                'question_data' => $questionData,
-                'points' => 1, // Default points for Easy
-            ]);
-        }
-        foreach ($averageQuestions as $item) {
-            $questionData = [
-                'type' => $item['type'],
-                'question_text' => $item['q'],
-                'timer_seconds' => 30,
-            ];
-
-            if ($item['type'] === 'Identification') {
-                $questionData['correct_answer'] = $item['a'];
-            } else {
-                $questionData['choices'] = $item['choices'];
-            }
-
-            Question::create([
-                'category_id' => $average->id,
-                'quiz_id' => $quiz->id,
-                'question_data' => $questionData,
-                'points' => 2, // Higher than Easy
-            ]);
-        }
-        foreach ($difficultQuestions as $item) {
-            $questionData = [
-                'type' => $item['type'],
-                'question_text' => $item['q'],
-                'timer_seconds' => 60,
-            ];
-
-            if ($item['type'] === 'Identification') {
-                $questionData['correct_answer'] = $item['a'];
-            } else {
-                $questionData['choices'] = $item['choices'];
-            }
-
-            Question::create([
-                'category_id' => $difficult->id,
-                'quiz_id' => $quiz->id,
-                'question_data' => $questionData,
-                'points' => 3, // Hard points
-            ]);
-        }
-
-        foreach ($tieBreakerQuestions as $item) {
-            $questionData = [
-                'type' => $item['type'],
-                'question_text' => $item['q'],
-                'timer_seconds' => 30,
-            ];
-
-            if ($item['type'] === 'Identification') {
-                $questionData['correct_answer'] = $item['a'];
-            } else {
-                $questionData['choices'] = $item['choices'];
-            }
-
-            Question::create([
-                'category_id' => $tieBreaker->id,
-                'quiz_id' => $quiz->id,
-                'question_data' => $questionData,
-                'points' => 0,
-                'bonus_points'=> 5 
-            ]);
-        }
-
-    }
-}
-

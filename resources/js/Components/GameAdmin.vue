@@ -13,6 +13,8 @@ const props = defineProps({
 const selectedCategory = ref(null);
 const timerDuration = ref(30);
 const countdown = ref(props.remainingTime || 0);
+const isSelecting = ref(false);
+const isStarting = ref(false);
 let animationFrameId = null;
 
 // Computed phase
@@ -29,17 +31,26 @@ const selectQuestion = () => {
         return;
     }
     
+    isSelecting.value = true;
+    setTimeout(() => isSelecting.value = false, 2000);
+
     router.post(route('game.selectQuestion', props.quiz.id), {
         category_id: selectedCategory.value,
+    }, {
+        onError: () => isSelecting.value = false,
     });
 };
 
 const startTimer = () => {
+    isStarting.value = true;
+    setTimeout(() => isStarting.value = false, 2000);
+
     router.post(route('game.startTimer', props.selectedQuestion.id), {
         duration: timerDuration.value,
     }, {
         preserveScroll: true,
         preserveState: true,
+        onError: () => isStarting.value = false,
     });
 };
 
@@ -91,6 +102,9 @@ watch(() => props.remainingTime, (newVal) => {
 
 onMounted(() => {
     if (props.selectedQuestion?.timer_started_at && props.selectedQuestion?.timer_duration) {
+        // Sync duration from prop
+        timerDuration.value = props.selectedQuestion.timer_duration;
+        
         const endTime = new Date(props.selectedQuestion.timer_started_at);
         endTime.setSeconds(endTime.getSeconds() + props.selectedQuestion.timer_duration);
         startTimerFromTimestamp(endTime.toISOString());
@@ -136,10 +150,10 @@ onUnmounted(() => {
                     </select>
                     <button
                         @click="selectQuestion"
-                        :disabled="!selectedCategory"
+                        :disabled="!selectedCategory || isSelecting"
                         :class="[
                             'px-6 py-2.5 h-11 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 text-sm',
-                            selectedCategory
+                            selectedCategory && !isSelecting
                                 ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                                 : 'bg-gray-700 text-gray-400 cursor-not-allowed border border-white/10'
                         ]"
@@ -152,14 +166,7 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Ready Phase -->
-            <div v-else-if="gamePhase === 'ready'" class="flex items-center justify-center gap-6">
-                 <div class="bg-blue-100/10 px-4 py-2 rounded-lg border border-blue-500/20">
-                    <span class="text-sm font-semibold text-blue-200 animate-pulse">
-                        Ready to Start Timer
-                    </span>
-                </div>
-            </div>
+
 
             <!-- Timer Phase -->
             <div v-else-if="gamePhase === 'timer'" class="flex items-center justify-between gap-4">
@@ -173,6 +180,22 @@ onUnmounted(() => {
                             {{ formatTime(countdown) }}
                         </span>
                     </div>
+
+                    <button
+                        @click="startTimer"
+                        :disabled="isStarting"
+                        :class="[
+                            'w-11 h-11 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center border border-white/10',
+                            isStarting 
+                                ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                                : 'bg-white/10 hover:bg-white/20 text-white hover:border-white/30 hover:scale-105'
+                        ]"
+                        title="Restart Timer"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Center: Timer Controls -->
@@ -188,6 +211,8 @@ onUnmounted(() => {
                         </svg>
                         Reveal Answer
                     </button>
+
+
                 </div>
 
                 <!-- Right: Status & Navigation Buttons -->
@@ -282,7 +307,11 @@ onUnmounted(() => {
                 <span class="text-sm text-white/70">seconds</span>
                 <button
                     @click="startTimer"
-                    class="ml-4 px-6 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 text-sm"
+                    :disabled="isStarting"
+                    :class="[
+                        'ml-4 px-6 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 text-sm',
+                        isStarting ? 'opacity-50 cursor-not-allowed' : ''
+                    ]"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
